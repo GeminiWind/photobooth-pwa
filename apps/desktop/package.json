@@ -1,0 +1,56 @@
+{
+  "name": "@photobooth/desktop",
+  "version": "0.1.0",
+  "description": "PhotoBooth desktop app built with Electron",
+  "author": "PhotoBooth Team",
+  "private": true,
+  "main": "dist/apps/desktop/src/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "concurrently -k \"npm --workspace @photobooth/web run dev\" \"tsc -w -p tsconfig.json\" \"wait-on tcp:5173 dist/apps/desktop/src/main.js && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "dev:debug": "cross-env ELECTRON_DEBUG=1 npm run dev",
+    "build": "npm --workspace @photobooth/web run build && tsc -p tsconfig.json && electron-builder",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@photobooth/core": "0.1.0",
+    "app-builder-bin": "^5.0.0-alpha.10"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "34.5.8",
+    "electron-builder": "^25.1.8",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.photobooth.pwa",
+    "productName": "PhotoBooth PWA",
+    "npmRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      {
+        "from": "../web/dist",
+        "to": "dist/web/dist",
+        "filter": [
+          "**/*"
+        ]
+      },
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
+  }
+}

@@ -1,0 +1,40 @@
+node_modules
+dist
+build
+coverage
+.DS_Store
+*.log
+apps/desktop/release
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Runtime / diagnostics
+*.pid
+*.pid.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test output
+coverage/
+.nyc_output/
+
+# Vite / TS cache
+.vite/
+*.tsbuildinfo
+
+# Electron artifacts
+apps/desktop/release/
+apps/desktop/dist/
+apps/web/dist/
+
+# Service worker / PWA generated assets (if generated locally)
+sw.js.map
+
+# Editor folders
+.idea/
+.vscode/

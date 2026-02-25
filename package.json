@@ -1,0 +1,22 @@
+{
+  "name": "photobooth-pwa",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @photobooth/web run dev",
+    "build:web": "npm --workspace @photobooth/web run build",
+    "dev:desktop": "npm --workspace @photobooth/desktop run dev",
+    "build:desktop": "npm --workspace @photobooth/desktop run build",
+    "typecheck": "npm run typecheck -ws",
+    "test": "npm run test -ws"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.11",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
