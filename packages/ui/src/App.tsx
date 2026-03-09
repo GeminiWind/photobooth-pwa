@@ -588,16 +588,6 @@ export function App() {
     }
   };
 
-  const liveSafeAreaStyle =
-    selectedFrame == null
-      ? undefined
-      : {
-          left: `${selectedFrame.safeArea.x * 100}%`,
-          top: `${selectedFrame.safeArea.y * 100}%`,
-          width: `${selectedFrame.safeArea.width * 100}%`,
-          height: `${selectedFrame.safeArea.height * 100}%`
-        };
-
   const saveActiveCapture = async () => {
     if (!activeCapture) {
       return;
