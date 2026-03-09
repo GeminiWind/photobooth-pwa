@@ -79,10 +79,10 @@ export async function deleteImportedFrame(frameId: string): Promise<void> {
 }
 
 export async function savePhoto(blob: Blob, filenameHint: string): Promise<{ pathLabel: string }> {
-  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const buffer = await blob.arrayBuffer();
   const bridge = window.photobooth as PhotoboothBridge | undefined;
   if (bridge) {
-    const result = await bridge.savePhoto(bytes, filenameHint);
+    const result = await bridge.savePhoto(buffer, filenameHint);
     return { pathLabel: result.absolutePath };
   }
 
@@ -101,4 +101,12 @@ export async function getSaveDirectory(): Promise<string> {
     return bridge.getSaveDirectory();
   }
   return "Browser Downloads";
+}
+
+export async function pickSaveDirectory(): Promise<string | null> {
+  const bridge = window.photobooth as PhotoboothBridge | undefined;
+  if (!bridge) {
+    throw new Error("Changing the save folder is only available in desktop mode");
+  }
+  return bridge.pickSaveDirectory();
 }

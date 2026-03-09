@@ -5,7 +5,8 @@ contextBridge.exposeInMainWorld("photobooth", {
   pickFrameFile: () => ipcRenderer.invoke("photobooth:pickFrameFile"),
   importFrame: (filePath: string) => ipcRenderer.invoke("photobooth:importFrame", filePath),
   deleteFrame: (frameId: string) => ipcRenderer.invoke("photobooth:deleteFrame", frameId),
-  savePhoto: (pngBytes: Uint8Array, filenameHint: string) =>
+  savePhoto: (pngBytes: ArrayBuffer, filenameHint: string) =>
     ipcRenderer.invoke("photobooth:savePhoto", pngBytes, filenameHint),
-  getSaveDirectory: () => ipcRenderer.invoke("photobooth:getSaveDirectory")
+  getSaveDirectory: () => ipcRenderer.invoke("photobooth:getSaveDirectory"),
+  pickSaveDirectory: () => ipcRenderer.invoke("photobooth:pickSaveDirectory")
 });

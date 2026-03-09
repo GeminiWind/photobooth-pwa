@@ -9,6 +9,9 @@ import {
 } from "../../../packages/core/src/index";
 
 type UserFrameRecord = FrameTemplate & { fileName?: string };
+type AppPreferences = {
+  saveDirectory?: string;
+};
 
 function userFramesRoot() {
   return path.join(app.getPath("userData"), "frames");
@@ -16,6 +19,10 @@ function userFramesRoot() {
 
 function userFramesDb() {
   return path.join(userFramesRoot(), "frames.json");
+}
+
+function preferencesPath() {
+  return path.join(app.getPath("userData"), "preferences.json");
 }
 
 async function ensureDir(dirPath: string) {
@@ -38,16 +45,33 @@ async function writeUserFrames(frames: UserFrameRecord[]) {
   await fs.writeFile(userFramesDb(), JSON.stringify(frames, null, 2), "utf8");
 }
 
-function getSaveDirectory() {
+function getDefaultSaveDirectory() {
   return path.join(app.getPath("pictures"), "Photobooth");
 }
 
+async function readPreferences(): Promise<AppPreferences> {
+  try {
+    const raw = await fs.readFile(preferencesPath(), "utf8");
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null ? (parsed as AppPreferences) : {};
+  } catch {
+    return {};
+  }
+}
+
+async function writePreferences(preferences: AppPreferences) {
+  await ensureDir(app.getPath("userData"));
+  await fs.writeFile(preferencesPath(), JSON.stringify(preferences, null, 2), "utf8");
+}
+
 async function resolveWritableSaveDirectory(): Promise<string> {
+  const preferences = await readPreferences();
   const candidates = [
-    path.join(app.getPath("pictures"), "Photobooth"),
+    preferences.saveDirectory,
+    getDefaultSaveDirectory(),
     path.join(app.getPath("documents"), "Photobooth"),
     path.join(app.getPath("userData"), "Photobooth")
-  ];
+  ].filter((value): value is string => Boolean(value));
 
   let lastError: unknown;
   for (const dir of candidates) {
@@ -172,16 +196,43 @@ ipcMain.handle("photobooth:getSaveDirectory", async () => {
   return dir;
 });
 
+ipcMain.handle("photobooth:pickSaveDirectory", async () => {
+  const currentDirectory = await resolveWritableSaveDirectory().catch(() => getDefaultSaveDirectory());
+  const result = await dialog.showOpenDialog({
+    title: "Choose Photo Save Folder",
+    defaultPath: currentDirectory,
+    properties: ["openDirectory", "createDirectory"]
+  });
+
+  if (result.canceled) {
+    return null;
+  }
+
+  const selected = result.filePaths[0];
+  if (!selected) {
+    return null;
+  }
+
+  await ensureDir(selected);
+  const probe = path.join(selected, `.write-test-${Date.now()}.tmp`);
+  await fs.writeFile(probe, "");
+  await fs.rm(probe, { force: true });
+
+  const preferences = await readPreferences();
+  await writePreferences({ ...preferences, saveDirectory: selected });
+  return selected;
+});
+
 ipcMain.handle(
   "photobooth:savePhoto",
-  async (_event, pngBytes: Uint8Array, filenameHint: string): Promise<{ absolutePath: string }> => {
+  async (_event, pngBytes: ArrayBuffer, filenameHint: string): Promise<{ absolutePath: string }> => {
     const saveDir = await resolveWritableSaveDirectory();
 
     const fileNames = new Set(await fs.readdir(saveDir));
     const requested = filenameHint?.trim() || buildPhotoFilename(new Date());
     const fileName = resolveCollision(requested, fileNames);
     const fullPath = path.join(saveDir, fileName);
-    await fs.writeFile(fullPath, Buffer.from(pngBytes));
+    await fs.writeFile(fullPath, Buffer.from(new Uint8Array(pngBytes)));
     return { absolutePath: fullPath };
   }
 );

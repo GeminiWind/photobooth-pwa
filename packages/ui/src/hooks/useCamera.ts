@@ -12,6 +12,25 @@ export function useCamera() {
   const streamRef = useRef<MediaStream | null>(null);
   const [state, setState] = useState<CameraState>({ devices: [], ready: false });
 
+  const attachStreamToVideo = useCallback((video: HTMLVideoElement | null) => {
+    videoRef.current = video;
+    if (!video || !streamRef.current) {
+      return;
+    }
+
+    if (video.srcObject !== streamRef.current) {
+      video.srcObject = streamRef.current;
+    }
+
+    void video.play().catch(() => {
+      setState((prev) => ({
+        ...prev,
+        ready: false,
+        error: "Unable to resume camera preview."
+      }));
+    });
+  }, []);
+
   const loadDevices = useCallback(async () => {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const cameras = devices.filter((item) => item.kind === "videoinput");
@@ -32,11 +51,10 @@ export function useCamera() {
         audio: false
       });
       streamRef.current = stream;
-      if (!videoRef.current) {
-        return;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
       }
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
       const track = stream.getVideoTracks()[0];
       const settings = track?.getSettings();
       setState((prev) => ({
@@ -88,6 +106,7 @@ export function useCamera() {
 
   return {
     videoRef,
+    attachStreamToVideo,
     state,
     hasDevices,
     start,

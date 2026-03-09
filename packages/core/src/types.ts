@@ -21,6 +21,8 @@ export type CaptureSettings = {
   selectedFrameId: string;
   cameraDeviceId?: string;
   mirrorPreview: boolean;
+  photoSequence: 'single' | '3photos' | '4photos' | '5photos';
+  screenFlash: boolean;
 };
 
 export type CaptureResult = {

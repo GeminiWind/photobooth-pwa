@@ -7,8 +7,9 @@ export type PhotoboothBridge = {
   pickFrameFile: () => Promise<string | null>;
   importFrame: (filePath: string) => Promise<FrameTemplate>;
   deleteFrame: (frameId: string) => Promise<void>;
-  savePhoto: (pngBytes: Uint8Array, filenameHint: string) => Promise<SavePhotoResponse>;
+  savePhoto: (pngBytes: ArrayBuffer, filenameHint: string) => Promise<SavePhotoResponse>;
   getSaveDirectory: () => Promise<string>;
+  pickSaveDirectory: () => Promise<string | null>;
 };
 
 declare global {
