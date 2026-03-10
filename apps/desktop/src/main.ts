@@ -92,7 +92,7 @@ async function resolveWritableSaveDirectory(): Promise<string> {
 async function createWindow() {
   const window = new BrowserWindow({
     width: 1400,
-    height: 900,
+    height: 1260,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

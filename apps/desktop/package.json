@@ -10,6 +10,8 @@
     "dev": "concurrently -k \"npm --workspace @photobooth/web run dev\" \"tsc -w -p tsconfig.json\" \"wait-on tcp:5173 dist/apps/desktop/src/main.js && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
     "dev:debug": "cross-env ELECTRON_DEBUG=1 npm run dev",
     "build": "npm --workspace @photobooth/web run build && tsc -p tsconfig.json && electron-builder",
+    "build:mac": "npm --workspace @photobooth/web run build && tsc -p tsconfig.json && electron-builder --mac",
+    "build:win": "npm --workspace @photobooth/web run build && tsc -p tsconfig.json && electron-builder --win",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run --passWithNoTests"
   },
@@ -44,7 +46,7 @@
     ],
     "mac": {
       "target": [
-        "zip"
+        "dmg"
       ]
     },
     "win": {

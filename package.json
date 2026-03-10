@@ -11,6 +11,8 @@
     "build:web": "npm --workspace @photobooth/web run build",
     "dev:desktop": "npm --workspace @photobooth/desktop run dev",
     "build:desktop": "npm --workspace @photobooth/desktop run build",
+    "build:mac": "npm --workspace @photobooth/desktop run build:mac",
+    "build:win": "npm --workspace @photobooth/desktop run build:win",
     "lint": "eslint .",
     "typecheck": "npm run typecheck -ws",
     "test": "npm run test -ws"
