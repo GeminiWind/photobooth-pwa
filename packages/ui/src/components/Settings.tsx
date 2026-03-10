@@ -14,15 +14,29 @@ type Props = {
 };
 
 // Toggle Switch Component
-function ToggleSwitch({ checked, onChange, id }: { checked: boolean; onChange: (checked: boolean) => void; id: string }) {
+function ToggleSwitch({
+  checked,
+  onChange,
+  id,
+  disabled = false
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  id: string;
+  disabled?: boolean;
+}) {
   return (
-    <label htmlFor={id} className="relative inline-flex cursor-pointer items-center">
+    <label
+      htmlFor={id}
+      className={`relative inline-flex items-center ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+    >
       <input
         type="checkbox"
         id={id}
         className="peer sr-only"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
+        disabled={disabled}
       />
       <div className="relative h-8 w-14 rounded-full bg-slate-600 transition-colors duration-200 peer-checked:bg-purple-500">
       </div>
@@ -81,7 +95,7 @@ export function Settings({
           </div>
           <h3 className="text-lg font-semibold text-slate-300 uppercase tracking-wide">Countdown Timer</h3>
         </div>
-        <div className="flex gap-2 p-1 bg-slate-800/50 rounded-full">
+        <div className="flex flex-wrap gap-2 rounded-full bg-slate-800/50 p-1">
           <OptionButton
             selected={settings.countdownSeconds === 0}
             onClick={() => onSettingsChange({ ...settings, countdownSeconds: 0 })}
@@ -127,11 +141,11 @@ export function Settings({
         </div>
         <div className="relative">
           <select
-            className="w-full appearance-none rounded-xl bg-slate-800/60 px-4 py-4 pr-10 text-slate-200 border border-slate-600/50 focus:border-purple-400 focus:outline-none transition-colors"
+            className="w-full appearance-none rounded-xl border border-slate-600/50 bg-slate-800/60 px-4 py-4 pr-10 text-slate-200 transition-colors focus:border-purple-400 focus:outline-none"
             value={activeDeviceId ?? settings.cameraDeviceId ?? ""}
             onChange={(event) => onSelectCamera(event.target.value)}
           >
-            <option value="">FaceTime HD Camera (Built-in)</option>
+              <option value="">Default camera</option>
             {cameraDevices.map((device) => (
               <option key={device.deviceId} value={device.deviceId}>
                 {device.label || `Camera ${device.deviceId.slice(0, 8)}`}
@@ -156,7 +170,7 @@ export function Settings({
           </div>
           <h3 className="text-lg font-semibold text-slate-300 uppercase tracking-wide">Photo Sequence</h3>
         </div>
-        <div className="flex gap-2 p-1 bg-slate-800/50 rounded-full">
+        <div className="flex flex-wrap gap-2 rounded-full bg-slate-800/50 p-1">
           <OptionButton 
             selected={settings.photoSequence === 'single'} 
             onClick={() => onSettingsChange({ ...settings, photoSequence: 'single' })}
@@ -185,8 +199,8 @@ export function Settings({
       </div>
 
       {/* Screen Flash & Mirror Image */}
-      <div className={`grid gap-6 ${showScreenFlash ? "grid-cols-2" : "grid-cols-1"}`}>
-        {showScreenFlash && (
+      <div className="grid gap-6 md:grid-cols-2">
+        <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-6 w-6 items-center justify-center">
@@ -200,9 +214,13 @@ export function Settings({
               id="screen-flash"
               checked={settings.screenFlash}
               onChange={(checked) => onSettingsChange({ ...settings, screenFlash: checked })}
+              disabled={!showScreenFlash}
             />
           </div>
-        )}
+          {!showScreenFlash && (
+            <p className="mt-2 mb-0 text-xs text-slate-400">Available in desktop mode only.</p>
+          )}
+        </div>
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -231,23 +249,24 @@ export function Settings({
           </div>
           <h3 className="text-lg font-semibold text-slate-300 uppercase tracking-wide">Save Location</h3>
         </div>
-        <div className="flex items-center justify-between rounded-xl bg-slate-800/60 px-4 py-4 border border-slate-600/50">
+        <div className="flex items-center justify-between rounded-xl border border-slate-600/50 bg-slate-800/60 px-4 py-4">
           <div className="flex-1">
             <div className="text-sm text-slate-400 mb-1">Current destination</div>
             <div className="text-slate-200 font-mono text-sm break-all">
               {saveDir || "/Users/admin/Pictures/Photobooth_App/"}
             </div>
+            {!canChangeSaveLocation && (
+              <div className="mt-2 text-xs text-slate-400">Folder selection is available in desktop mode.</div>
+            )}
           </div>
-          {canChangeSaveLocation && (
-            <button
-              type="button"
-              className="ml-4 rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={onChangeSaveLocation}
-              disabled={changingSaveLocation}
-            >
-              {changingSaveLocation ? "Opening..." : "Change"}
-            </button>
-          )}
+          <button
+            type="button"
+            className="ml-4 rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={onChangeSaveLocation}
+            disabled={!canChangeSaveLocation || changingSaveLocation}
+          >
+            {changingSaveLocation ? "Opening..." : "Change"}
+          </button>
         </div>
       </div>
 

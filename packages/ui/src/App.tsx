@@ -210,6 +210,7 @@ function buildShareLinkFromPayload(payload: string): string {
 
 export function App() {
   const { videoRef, attachStreamToVideo, state: camera, hasDevices, start } = useCamera();
+  const isDesktopRuntime = isElectronRuntime();
   const [frames, setFrames] = useState<FrameTemplate[]>([]);
   const [settings, setSettings] = useState<CaptureSettings>(loadSettings);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -223,6 +224,7 @@ export function App() {
   const [showGallery, setShowGallery] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [screenFlashVisible, setScreenFlashVisible] = useState(false);
   const [activeCaptureId, setActiveCaptureId] = useState<string | null>(null);
   const [previewCaptureIds, setPreviewCaptureIds] = useState<string[]>([]);
   const [previewCaptureIndex, setPreviewCaptureIndex] = useState(0);
@@ -233,6 +235,7 @@ export function App() {
   const [sharedPhoto, setSharedPhoto] = useState<{ blob: Blob; previewUrl: string } | null>(null);
   const galleryRef = useRef<GalleryItem[]>([]);
   const sequenceCaptureIdsRef = useRef<string[]>([]);
+  const screenFlashTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedFrame = useMemo(
@@ -286,6 +289,26 @@ export function App() {
   }, [showSettings]);
 
   useEffect(() => {
+    if (!showGallery && !showShareModal) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+      if (showShareModal) {
+        setShowShareModal(false);
+        return;
+      }
+      setShowGallery(false);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showGallery, showShareModal]);
+
+  useEffect(() => {
     galleryRef.current = gallery;
   }, [gallery]);
 
@@ -293,6 +316,9 @@ export function App() {
     return () => {
       for (const item of galleryRef.current) {
         URL.revokeObjectURL(item.previewUrl);
+      }
+      if (screenFlashTimerRef.current !== null) {
+        window.clearTimeout(screenFlashTimerRef.current);
       }
     };
   }, []);
@@ -401,6 +427,16 @@ export function App() {
       setError("");
       setNotice("");
       try {
+        if (settings.screenFlash) {
+          setScreenFlashVisible(true);
+          if (screenFlashTimerRef.current !== null) {
+            window.clearTimeout(screenFlashTimerRef.current);
+          }
+          screenFlashTimerRef.current = window.setTimeout(() => {
+            setScreenFlashVisible(false);
+            screenFlashTimerRef.current = null;
+          }, 160);
+        }
         const { compositedBlob } = await composeFrame(
           videoRef.current,
           selectedFrame.frameImagePathOrUrl,
@@ -432,12 +468,23 @@ export function App() {
         sequenceCaptureIdsRef.current = [];
         setCountdown(null);
       } finally {
+        if (screenFlashTimerRef.current === null) {
+          setScreenFlashVisible(false);
+        }
         setCapturing(false);
       }
     };
 
     void run();
-  }, [countdown, selectedFrame, settings.countdownSeconds, sequenceShotsRemaining, sequenceShotsTotal, videoRef]);
+  }, [
+    countdown,
+    selectedFrame,
+    settings.countdownSeconds,
+    settings.screenFlash,
+    sequenceShotsRemaining,
+    sequenceShotsTotal,
+    videoRef
+  ]);
 
   const startCountdown = () => {
     if (!camera.ready || !selectedFrame) {
@@ -915,8 +962,16 @@ export function App() {
           </section>
 
           {showShareModal && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[rgba(25,16,34,0.6)] px-4 py-10 backdrop-blur-[6px] sm:px-8">
-              <section className="w-full max-w-[512px] overflow-hidden rounded-[24px] border border-[#7f0df233] bg-[rgba(25,16,34,0.95)] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+            <div
+              className="absolute inset-0 z-10 flex items-center justify-center bg-[rgba(25,16,34,0.6)] px-4 py-10 backdrop-blur-[6px] sm:px-8"
+              role="presentation"
+            >
+              <section
+                className="w-full max-w-[512px] overflow-hidden rounded-[24px] border border-[#7f0df233] bg-[rgba(25,16,34,0.95)] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] backdrop-blur-xl"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Share photo"
+              >
                 <div className="flex items-center justify-between border-b border-[#7f0df21a] px-6 pt-6 pb-[25px]">
                   <h3 className="m-0 text-2xl font-bold tracking-[-0.6px] text-slate-100">Share Your Photo</h3>
                   <button
@@ -1163,11 +1218,15 @@ export function App() {
         <div
           className="fixed inset-0 z-10 overflow-hidden bg-[rgba(7,6,18,0.14)] backdrop-blur-[6px]"
           onClick={() => setShowSettings(false)}
+          role="presentation"
         >
           <div className="flex min-h-full items-stretch justify-end">
             <section
               className="flex min-h-full w-full max-w-[580px] flex-col border-l border-[#7f0df238] bg-[linear-gradient(180deg,rgba(16,19,44,0.94),rgba(9,12,29,0.96)),#0f1126] shadow-[-24px_0_80px_rgba(0,0,0,0.35)]"
               onClick={(event) => event.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Capture settings"
             >
               <div className="flex items-start justify-between gap-3 border-b border-white/8 px-6 pt-7 pb-6">
                 <div className="space-y-2">
@@ -1202,8 +1261,8 @@ export function App() {
                   saveDir={saveDir}
                   onChangeSaveLocation={() => void onChangeSaveLocation()}
                   changingSaveLocation={changingSaveLocation}
-                  canChangeSaveLocation={isElectronRuntime()}
-                  showScreenFlash={isElectronRuntime()}
+                  canChangeSaveLocation={isDesktopRuntime}
+                  showScreenFlash={true}
                 />
               </div>
 
@@ -1233,10 +1292,14 @@ export function App() {
         <div
           className="fixed inset-0 z-10 grid place-items-center bg-[rgba(3,6,18,0.7)] p-3 backdrop-blur-md sm:p-6"
           onClick={() => setShowGallery(false)}
+          role="presentation"
         >
           <section
             className="max-h-[88vh] w-full max-w-[960px] overflow-auto rounded-[28px] border border-[#7f0df238] bg-[linear-gradient(180deg,rgba(16,19,44,0.98),rgba(9,12,29,0.98)),#0f1126] pb-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
             onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Photo gallery"
           >
             <div className="flex items-start justify-between gap-3 px-6 pt-6">
               <div>
@@ -1310,7 +1373,9 @@ export function App() {
                     <div className="absolute top-3 right-3 left-3 z-[1] flex items-center justify-between">
                       <label
                         className={`grid size-[34px] place-items-center rounded-full border border-white/14 bg-[rgba(3,6,18,0.68)] transition ${
-                          item.selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                          item.selected
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
                         }`}
                         aria-label="Select captured photo"
                       >
@@ -1323,7 +1388,7 @@ export function App() {
                       </label>
                       <button
                         type="button"
-                        className="grid size-[34px] place-items-center rounded-full border border-white/14 bg-[rgba(3,6,18,0.68)] p-0 text-white opacity-0 transition group-hover:opacity-100"
+                        className="grid size-[34px] place-items-center rounded-full border border-white/14 bg-[rgba(3,6,18,0.68)] p-0 text-white opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100"
                         aria-label="Delete captured photo"
                         onClick={() => onRemoveGalleryItem(item.id)}
                       >
@@ -1352,6 +1417,8 @@ export function App() {
         className="hidden"
         onChange={(event) => void onWebFileSelected(event)}
       />
+
+      {screenFlashVisible && <div className="pointer-events-none fixed inset-0 z-[70] bg-white/95" aria-hidden />}
     </>
   );
 }
