@@ -8,6 +8,19 @@
     "figma": {
       "type": "remote",
       "url": "https://mcp.figma.com/mcp"
+    },
+     "task-master-ai": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "task-master-ai"
+      ],
+      "enabled": true,
+      "environment": {
+        "TASK_MASTER_TOOLS": "core",
+        "OPENAI_API_KEY": ""
+      }
     }
   }
 }
